@@ -283,7 +283,7 @@ function parseDataToken(rawToken) {
     return hexToBytes(rawToken.slice(1, -1));
   }
 
-  if (/^0x[0-9a-f]+$/i.test(rawToken)) {
+  if (/^0x[0-9a-f]*$/i.test(rawToken)) {
     return hexToBytes(rawToken);
   }
 
@@ -464,7 +464,11 @@ export function normalizeInternalKey(rawKey) {
 }
 
 export function buildTaprootArtifacts(words, internalKey, network) {
-  const tapleaf = Tap.encodeScript(words).hex;
+  const tapleafData = Tap.encodeScript(words);
+  const tapleaf =
+    typeof tapleafData === 'string'
+      ? tapleafData
+      : bytesToHex(tapleafData);
   const [outputKey, controlBlock] = Tap.getPubKey(internalKey, {
     target: tapleaf,
   });
