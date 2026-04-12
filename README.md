@@ -1,4 +1,5 @@
 # Taproot Script Debugger
+[![CI](https://github.com/RiccardoBiffi/tr-script-debug/actions/workflows/ci.yml/badge.svg)](https://github.com/RiccardoBiffi/tr-script-debug/actions/workflows/ci.yml)
 
 Browser-based Bitcoin Script debugger focused on Taproot script-path spends.
 
