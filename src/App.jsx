@@ -265,223 +265,242 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar__brand">
-          <div className="topbar__eyebrow">Taproot Script Lab</div>
           <h1 className="topbar__title">Taproot Script Debugger</h1>
         </div>
         <div className="topbar__stats">
-          <StatChip label="Script Status" value={frame?.status ?? 'idle'} tone={statusTone} />
-          <StatChip label="Steps" value={`${activePlayhead}/${maxPlayhead}`} />
-          <StatChip label="Budget" value={frame ? String(frame.sigopsBudget) : '—'} />
-          <StatChip
-            label="Tx Final"
-            value={frame?.txFinality ? (frame.txFinality.isFinal ? 'yes' : 'no') : '—'}
-            tone={finalityTone}
-          />
+          <div className={`header-stat header-stat--${statusTone}`}>
+            <span className="header-stat__label">Script Status</span>
+            <span className="header-stat__value">{frame?.status ?? 'idle'}</span>
+          </div>
+          <div className="header-stat">
+            <span className="header-stat__label">Steps</span>
+            <span className="header-stat__value">{`${activePlayhead}/${maxPlayhead}`}</span>
+          </div>
+          <div className="header-stat">
+            <span className="header-stat__label">Budget</span>
+            <span className="header-stat__value">{frame ? String(frame.sigopsBudget) : '—'}</span>
+          </div>
+          <div className={`header-stat header-stat--${finalityTone}`}>
+            <span className="header-stat__label">Tx Final</span>
+            <span className="header-stat__value">
+              {frame?.txFinality ? (frame.txFinality.isFinal ? 'yes' : 'no') : '—'}
+            </span>
+          </div>
         </div>
       </header>
 
-      <section className="preset-strip">
-        {PRESETS.map((preset) => (
-          <button key={preset.id} className="preset" onClick={() => loadPreset(preset)} type="button">
-            <span className="preset__name">{preset.name}</span>
-          </button>
-        ))}
-      </section>
+      <aside className="app-sidebar">
+        <section className="panel panel--sidebar">
+          <div className="sidebar-tabs" role="tablist" aria-label="Debugger sidebar sections">
+            <button
+              type="button"
+              role="tab"
+              id="tab-context"
+              aria-selected={sidebarTab === 'context'}
+              aria-controls="panel-context"
+              className={`sidebar-tab${sidebarTab === 'context' ? ' sidebar-tab--active' : ''}`}
+              onClick={() => setSidebarTab('context')}
+            >
+              Execution Context
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="tab-taproot"
+              aria-selected={sidebarTab === 'taproot'}
+              aria-controls="panel-taproot"
+              className={`sidebar-tab${sidebarTab === 'taproot' ? ' sidebar-tab--active' : ''}`}
+              onClick={() => setSidebarTab('taproot')}
+            >
+              Taproot Commitments
+            </button>
+          </div>
 
-      <ErrorList errors={model.errors} />
-
-      <main className="workspace">
-        <section className="workspace__column">
-          <section className="panel panel--follow">
-            <PanelHeader eyebrow="Witness" title="Witness Stack" />
-            <Field
-              label="Witness Stack Items"
-              value={form.witnessText}
-              onChange={(value) => patchField('witnessText', value)}
-              textarea
-              mono
-              rows={9}
-              help="One stack item per line. Empty vector: 0, <>, or 0x."
-            />
-            <CodeBlock
-              label="Witness Used For Spend"
-              value={
-                model.txBundle
-                  ? model.txBundle.finalWitnessHex
-                      .map((item, index) => `#${index}: ${item || '(empty)'}`)
-                      .join('\n')
-                  : ''
-              }
-              compact
-            />
-          </section>
-
-          <section className="panel">
-            <PanelHeader eyebrow="Trace" title="Instruction Trace" />
-            <InstructionLane instructions={model.script.instructions} frame={frame} />
-          </section>
-        </section>
-
-        <section className="workspace__column">
-          <section className="panel panel--follow">
-            <PanelHeader eyebrow="Locking Script" title="Tapscript Assembly" />
-            <Field
-              label="Script"
-              value={form.scriptText}
-              onChange={(value) => patchField('scriptText', value)}
-              textarea
-              mono
-              rows={9}
-              help="Use ASM-style tokens. Data pushes can be decimal numbers, 0x-prefixed hex, <hex>, or quoted strings."
-            />
-            <div className="two-up">
-              <CodeBlock label="Compiled Script Hex" value={model.script.scriptHex} compact />
-              <CodeBlock label="Destination Script Hex" value={model.destination.scriptHex} compact />
-            </div>
-          </section>
-
-          <section className="panel">
-            <PanelHeader
-              eyebrow="Visualizer"
-              title="Stack Visualizer"
-              action={
-                <button
-                  type="button"
-                  className={`icon-toggle${showAltStack ? ' icon-toggle--active' : ''}`}
-                  onClick={() => setShowAltStack((current) => !current)}
-                  aria-pressed={showAltStack}
-                  aria-label={showAltStack ? 'Hide alt stack' : 'Show alt stack'}
-                >
-                  <span className="icon-toggle__glyph" aria-hidden="true">
-                    <span />
-                    <span />
-                  </span>
-                  <span className="icon-toggle__label">Alt Stack</span>
-                </button>
-              }
-            />
-            <div className={`stack-layout${showAltStack ? ' stack-layout--expanded' : ''}`}>
-              <StackPane title="Main Stack" items={frame?.stack ?? []} emptyLabel="Main stack is empty." />
-              {showAltStack ? (
-                <StackPane title="Alt Stack" items={frame?.altStack ?? []} emptyLabel="Alt stack is empty." />
-              ) : null}
-            </div>
-          </section>
-        </section>
-
-        <aside className="workspace__sidebar">
-          <section className="panel panel--sidebar">
-            <div className="sidebar-tabs">
-              <button
-                type="button"
-                className={`sidebar-tab${sidebarTab === 'context' ? ' sidebar-tab--active' : ''}`}
-                onClick={() => setSidebarTab('context')}
-              >
-                Execution Context
-              </button>
-              <button
-                type="button"
-                className={`sidebar-tab${sidebarTab === 'taproot' ? ' sidebar-tab--active' : ''}`}
-                onClick={() => setSidebarTab('taproot')}
-              >
-                Taproot Commitments
-              </button>
-            </div>
-
-            {sidebarTab === 'context' ? (
-              <div className="sidebar-section">
-                <PanelHeader eyebrow="Execution Context" title="Spend Template" />
-                <div className="sidebar-grid sidebar-grid--three">
-                  <Field label="Tx Version" value={form.txVersion} onChange={(value) => patchField('txVersion', value)} />
-                  <Field label="Tx Locktime" value={form.txLocktime} onChange={(value) => patchField('txLocktime', value)} />
-                  <Field
-                    label="Input Sequence"
-                    value={form.inputSequence}
-                    onChange={(value) => patchField('inputSequence', value)}
-                  />
-                </div>
-                <div className="sidebar-grid sidebar-grid--three">
-                  <Field
-                    label="Current Block Height"
-                    value={form.chainHeight}
-                    onChange={(value) => patchField('chainHeight', value)}
-                  />
-                  <Field
-                    label="Current Block Time"
-                    value={form.chainTime}
-                    onChange={(value) => patchField('chainTime', value)}
-                    help={timePreview}
-                  />
-                  <Field
-                    label="Prevout Value"
-                    value={form.prevoutValue}
-                    onChange={(value) => patchField('prevoutValue', value)}
-                  />
-                </div>
-                <div className="sidebar-grid sidebar-grid--two">
-                  <Field
-                    label="Prevout Txid"
-                    value={form.prevoutTxid}
-                    onChange={(value) => patchField('prevoutTxid', value)}
-                    mono
-                  />
-                  <Field
-                    label="Prevout Index"
-                    value={form.prevoutIndex}
-                    onChange={(value) => patchField('prevoutIndex', value)}
-                  />
-                </div>
+          {sidebarTab === 'context' ? (
+            <div className="sidebar-section" role="tabpanel" id="panel-context" aria-labelledby="tab-context">
+              <PanelHeader eyebrow="Execution Context" title="Spend Template" />
+              <div className="sidebar-grid sidebar-grid--three">
+                <Field label="Tx Version" value={form.txVersion} onChange={(value) => patchField('txVersion', value)} />
+                <Field label="Tx Locktime" value={form.txLocktime} onChange={(value) => patchField('txLocktime', value)} />
                 <Field
-                  label="Output Value"
-                  value={form.outputValue}
-                  onChange={(value) => patchField('outputValue', value)}
+                  label="Input Sequence"
+                  value={form.inputSequence}
+                  onChange={(value) => patchField('inputSequence', value)}
                 />
-                <CodeBlock label="Transaction Hex Used For CHECKSIG" value={model.txHex} />
               </div>
-            ) : (
-              <div className="sidebar-section">
-                <PanelHeader eyebrow="Taproot Commitments" title="Key, Leaf, Address" />
-                <div className="sidebar-grid sidebar-grid--three">
-                  <Field
-                    label="Internal Key"
-                    value={form.internalKey}
-                    onChange={(value) => patchField('internalKey', value)}
-                    mono
-                    help="32-byte x-only pubkey or a compressed 33-byte pubkey."
-                  />
-                  <Field label="Network" value={form.network} onChange={() => {}}>
-                    <select
-                      className="field__input"
-                      value={form.network}
-                      onChange={(event) => patchField('network', event.target.value)}
-                    >
-                      <option value="main">main</option>
-                      <option value="testnet">testnet</option>
-                      <option value="regtest">regtest</option>
-                    </select>
-                  </Field>
-                  <Field
-                    label="Output Script"
-                    value={form.outputScript}
-                    onChange={(value) => patchField('outputScript', value)}
-                    mono
-                    help="Destination output for the spend transaction. Address or assembly."
-                  />
-                </div>
-                <div className="sidebar-grid sidebar-grid--two">
-                  <CodeBlock label="Tapleaf Hash" value={model.taproot?.tapleaf} compact />
-                  <CodeBlock label="Output Key" value={model.taproot?.outputKey} compact />
-                </div>
-                <div className="sidebar-grid sidebar-grid--two">
-                  <CodeBlock label="Control Block" value={model.taproot?.controlBlock} compact />
-                  <CodeBlock label="Taproot scriptPubKey" value={model.taproot?.scriptPubKeyHex} compact />
-                </div>
-                <CodeBlock label="Address" value={model.taproot?.address} compact />
+              <div className="sidebar-grid sidebar-grid--three">
+                <Field
+                  label="Current Block Height"
+                  value={form.chainHeight}
+                  onChange={(value) => patchField('chainHeight', value)}
+                />
+                <Field
+                  label="Current Block Time"
+                  value={form.chainTime}
+                  onChange={(value) => patchField('chainTime', value)}
+                  help={timePreview}
+                />
+                <Field
+                  label="Prevout Value"
+                  value={form.prevoutValue}
+                  onChange={(value) => patchField('prevoutValue', value)}
+                />
               </div>
-            )}
+              <div className="sidebar-grid sidebar-grid--two">
+                <Field
+                  label="Prevout Txid"
+                  value={form.prevoutTxid}
+                  onChange={(value) => patchField('prevoutTxid', value)}
+                  mono
+                />
+                <Field
+                  label="Prevout Index"
+                  value={form.prevoutIndex}
+                  onChange={(value) => patchField('prevoutIndex', value)}
+                />
+              </div>
+              <Field
+                label="Output Value"
+                value={form.outputValue}
+                onChange={(value) => patchField('outputValue', value)}
+              />
+              <CodeBlock label="Transaction Hex Used For CHECKSIG" value={model.txHex} />
+            </div>
+          ) : (
+            <div className="sidebar-section" role="tabpanel" id="panel-taproot" aria-labelledby="tab-taproot">
+              <PanelHeader eyebrow="Taproot Commitments" title="Key, Leaf, Address" />
+              <div className="sidebar-grid sidebar-grid--three">
+                <Field
+                  label="Internal Key"
+                  value={form.internalKey}
+                  onChange={(value) => patchField('internalKey', value)}
+                  mono
+                  help="32-byte x-only pubkey or a compressed 33-byte pubkey."
+                />
+                <Field label="Network" value={form.network} onChange={() => {}}>
+                  <select
+                    className="field__input"
+                    value={form.network}
+                    onChange={(event) => patchField('network', event.target.value)}
+                  >
+                    <option value="main">main</option>
+                    <option value="testnet">testnet</option>
+                    <option value="regtest">regtest</option>
+                  </select>
+                </Field>
+                <Field
+                  label="Output Script"
+                  value={form.outputScript}
+                  onChange={(value) => patchField('outputScript', value)}
+                  mono
+                  help="Destination output for the spend transaction. Address or assembly."
+                />
+              </div>
+              <div className="sidebar-grid sidebar-grid--two">
+                <CodeBlock label="Tapleaf Hash" value={model.taproot?.tapleaf} compact />
+                <CodeBlock label="Output Key" value={model.taproot?.outputKey} compact />
+              </div>
+              <div className="sidebar-grid sidebar-grid--two">
+                <CodeBlock label="Control Block" value={model.taproot?.controlBlock} compact />
+                <CodeBlock label="Taproot scriptPubKey" value={model.taproot?.scriptPubKeyHex} compact />
+              </div>
+              <CodeBlock label="Address" value={model.taproot?.address} compact />
+            </div>
+          )}
+        </section>
+      </aside>
+
+      <div className="content-shell">
+        <section className="preset-strip">
+          {PRESETS.map((preset) => (
+            <button key={preset.id} className="preset" onClick={() => loadPreset(preset)} type="button">
+              <span className="preset__name">{preset.name}</span>
+            </button>
+          ))}
+        </section>
+
+        <ErrorList errors={model.errors} />
+
+        <main className="workspace">
+          <section className="workspace__column">
+            <section className="panel">
+              <PanelHeader eyebrow="Witness" title="Witness Stack" />
+              <Field
+                label="Witness Stack Items"
+                value={form.witnessText}
+                onChange={(value) => patchField('witnessText', value)}
+                textarea
+                mono
+                rows={9}
+                help="One stack item per line. Empty vector: 0, <>, or 0x."
+              />
+              <CodeBlock
+                label="Witness Used For Spend"
+                value={
+                  model.txBundle
+                    ? model.txBundle.finalWitnessHex
+                        .map((item, index) => `#${index}: ${item || '(empty)'}`)
+                        .join('\n')
+                    : ''
+                }
+                compact
+              />
+            </section>
+
+            <section className="panel">
+              <PanelHeader eyebrow="Trace" title="Instruction Trace" />
+              <InstructionLane instructions={model.script.instructions} frame={frame} />
+            </section>
           </section>
-        </aside>
-      </main>
+
+          <section className="workspace__column">
+            <section className="panel">
+              <PanelHeader eyebrow="Locking Script" title="Tapscript Assembly" />
+              <Field
+                label="Script"
+                value={form.scriptText}
+                onChange={(value) => patchField('scriptText', value)}
+                textarea
+                mono
+                rows={9}
+                help="Use ASM-style tokens. Data pushes can be decimal numbers, 0x-prefixed hex, <hex>, or quoted strings."
+              />
+              <div className="two-up">
+                <CodeBlock label="Compiled Script Hex" value={model.script.scriptHex} compact />
+                <CodeBlock label="Destination Script Hex" value={model.destination.scriptHex} compact />
+              </div>
+            </section>
+
+            <section className="panel">
+              <PanelHeader
+                eyebrow="Visualizer"
+                title="Stack Visualizer"
+                action={
+                  <button
+                    type="button"
+                    className={`icon-toggle${showAltStack ? ' icon-toggle--active' : ''}`}
+                    onClick={() => setShowAltStack((current) => !current)}
+                    aria-pressed={showAltStack}
+                    aria-label={showAltStack ? 'Hide alt stack' : 'Show alt stack'}
+                  >
+                    <span className="icon-toggle__glyph" aria-hidden="true">
+                      <span />
+                      <span />
+                    </span>
+                    <span className="icon-toggle__label">Alt Stack</span>
+                  </button>
+                }
+              />
+              <div className={`stack-layout${showAltStack ? ' stack-layout--expanded' : ''}`}>
+                <StackPane title="Main Stack" items={frame?.stack ?? []} emptyLabel="Main stack is empty." />
+                {showAltStack ? (
+                  <StackPane title="Alt Stack" items={frame?.altStack ?? []} emptyLabel="Alt stack is empty." />
+                ) : null}
+              </div>
+            </section>
+          </section>
+        </main>
+      </div>
 
       <section className="debugger-bar">
         <div className="debugger-bar__status">
