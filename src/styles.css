@@ -307,6 +307,11 @@ textarea.field__input {
   margin-top: 0;
 }
 
+.app-sidebar .sidebar-grid--two,
+.app-sidebar .sidebar-grid--three {
+  grid-template-columns: 1fr;
+}
+
 .code-block {
   display: grid;
   gap: 0.45rem;
