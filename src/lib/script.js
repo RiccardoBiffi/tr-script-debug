@@ -464,14 +464,31 @@ export function normalizeInternalKey(rawKey) {
 }
 
 export function buildTaprootArtifacts(words, internalKey, network) {
+  return buildTaprootArtifactsWithTree(words, internalKey, network, []);
+}
+
+export function buildTaprootArtifactsWithTree(words, internalKey, network, siblingLeaves = []) {
   const tapleafData = Tap.encodeScript(words);
   const tapleaf =
     typeof tapleafData === 'string'
       ? tapleafData
       : bytesToHex(tapleafData);
-  const [outputKey, controlBlock] = Tap.getPubKey(internalKey, {
-    target: tapleaf,
+  const siblingTapleaves = siblingLeaves.map((leafWords) => {
+    const leafData = Tap.encodeScript(leafWords);
+    return typeof leafData === 'string' ? leafData : bytesToHex(leafData);
   });
+  const tree = [tapleaf, ...siblingTapleaves];
+  const [outputKey, controlBlock] = Tap.getPubKey(
+    internalKey,
+    tree.length > 1
+      ? {
+          tree,
+          target: tapleaf,
+        }
+      : {
+          target: tapleaf,
+        },
+  );
   const scriptPubKeyWords = ['OP_1', outputKey];
 
   return {

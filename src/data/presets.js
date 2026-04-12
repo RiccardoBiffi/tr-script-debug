@@ -8,6 +8,7 @@ function baseForm(overrides = {}) {
   return {
     scriptText: '2 3 OP_ADD 5 OP_EQUAL',
     witnessText: '',
+    tapTreeScripts: [],
     internalKey: INTERNAL_KEY,
     network: 'regtest',
     txVersion: '2',
@@ -62,12 +63,15 @@ export const PRESETS = [
     }),
   },
   {
-    id: 'success',
-    name: 'OP_SUCCESS',
-    summary: 'Demonstrates how tapscript OP_SUCCESS opcodes short-circuit validation.',
+    id: 'three-leaf',
+    name: 'Three-Leaf Taproot',
+    summary: 'Demonstrates a taproot tree with three script leaves.',
     form: baseForm({
-      scriptText: 'OP_CAT',
-      witnessText: '0x01\n0x02',
+      scriptText: '2 3 OP_ADD 5 OP_EQUAL',
+      tapTreeScripts: [
+        `${SAMPLE_PUBKEY} OP_CHECKSIG`,
+        '10 OP_CHECKSEQUENCEVERIFY OP_DROP OP_TRUE',
+      ],
     }),
   },
 ];

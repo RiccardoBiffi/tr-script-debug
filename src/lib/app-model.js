@@ -1,7 +1,7 @@
 import { Tx } from '@cmdcode/tapscript';
 import { buildTxTemplate, executeDebugger } from './interpreter.js';
 import {
-  buildTaprootArtifacts,
+  buildTaprootArtifactsWithTree,
   bytesToHex,
   normalizeInternalKey,
   parseLockingScriptInput,
@@ -40,8 +40,19 @@ export function buildModel(form) {
   const script = parseScript(form.scriptText);
   const witness = parseWitness(form.witnessText);
   const destination = parseLockingScriptInput(form.outputScript);
+  const siblingLeafScripts = Array.isArray(form.tapTreeScripts)
+    ? form.tapTreeScripts.map((leafScript, index) => ({
+        index,
+        script: parseScript(leafScript),
+      }))
+    : [];
 
   const errors = [...script.errors, ...witness.errors, ...destination.errors];
+  siblingLeafScripts.forEach(({ index, script: leaf }) => {
+    leaf.errors.forEach((error) => {
+      errors.push(`Tap tree leaf ${index + 2}: ${error}`);
+    });
+  });
   let taproot = null;
   let txBundle = null;
   let txHex = '';
@@ -51,7 +62,12 @@ export function buildModel(form) {
   if (errors.length === 0) {
     try {
       const internalKey = normalizeInternalKey(form.internalKey);
-      taproot = buildTaprootArtifacts(script.encodedWords, internalKey, form.network);
+      taproot = buildTaprootArtifactsWithTree(
+        script.encodedWords,
+        internalKey,
+        form.network,
+        siblingLeafScripts.map(({ script: leaf }) => leaf.encodedWords),
+      );
       context = parseContext(form);
       txBundle = buildTxTemplate({
         context,

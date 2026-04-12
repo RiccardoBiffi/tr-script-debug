@@ -52,3 +52,16 @@ test('buildModel surfaces parser and witness errors without attempting execution
   assert.ok(model.errors.some((error) => error.includes('OP_MADE_UP')));
   assert.ok(model.errors.some((error) => error.includes('Witness line 1')));
 });
+
+test('buildModel supports taproot presets with sibling leaves in the tree', () => {
+  const model = buildModel(
+    createForm({
+      scriptText: '2 3 OP_ADD 5 OP_EQUAL',
+      tapTreeScripts: ['OP_TRUE', '10 OP_CHECKSEQUENCEVERIFY OP_DROP OP_TRUE'],
+    }),
+  );
+
+  assert.deepEqual(model.errors, []);
+  assert.ok(model.taproot);
+  assert.ok(model.taproot.controlBlock.length > 66);
+});

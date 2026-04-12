@@ -6,6 +6,8 @@ const MIN_BLOCK_HEIGHT = 52;
 const MAX_BLOCK_HEIGHT = 98;
 const MIN_CANVAS_HEIGHT = 300;
 const MAX_CANVAS_HEIGHT = 720;
+const MIN_CANVAS_HEIGHT_PROMINENT = 520;
+const MAX_CANVAS_HEIGHT_PROMINENT = 1040;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -72,19 +74,21 @@ function trimText(ctx, text, maxWidth) {
   return `${trimmed}...`;
 }
 
-export default function StackPane({ title, items, emptyLabel }) {
+export default function StackPane({ title, items, emptyLabel, prominent = false }) {
   const [containerRef, canvasWidth] = useCanvasWidth();
   const canvasRef = useRef(null);
 
   const metrics = useMemo(() => {
     const itemCount = items.length;
-    const preferredHeight = MIN_CANVAS_HEIGHT + Math.max(itemCount - 1, 0) * 74;
-    const canvasHeight = clamp(preferredHeight, MIN_CANVAS_HEIGHT, MAX_CANVAS_HEIGHT);
+    const minHeight = prominent ? MIN_CANVAS_HEIGHT_PROMINENT : MIN_CANVAS_HEIGHT;
+    const maxHeight = prominent ? MAX_CANVAS_HEIGHT_PROMINENT : MAX_CANVAS_HEIGHT;
+    const preferredHeight = minHeight + Math.max(itemCount - 1, 0) * 74;
+    const canvasHeight = clamp(preferredHeight, minHeight, maxHeight);
     return {
       canvasHeight,
       drawWidth: Math.max(canvasWidth, 280),
     };
-  }, [canvasWidth, items.length]);
+  }, [canvasWidth, items.length, prominent]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -134,15 +138,15 @@ export default function StackPane({ title, items, emptyLabel }) {
       return;
     }
 
-    const visibleItems = [...items].reverse();
+    const visibleItems = items;
     const availableHeight = innerHeight - PADDING * 1.2;
     const blockHeight = clamp(
       (availableHeight - GAP * Math.max(visibleItems.length - 1, 0)) / visibleItems.length,
       MIN_BLOCK_HEIGHT,
       MAX_BLOCK_HEIGHT,
     );
-    const usedHeight = visibleItems.length * blockHeight + Math.max(visibleItems.length - 1, 0) * GAP;
-    let y = innerY + innerHeight - usedHeight - 14;
+    const totalBlocksHeight = blockHeight * visibleItems.length + GAP * Math.max(visibleItems.length - 1, 0);
+    let y = innerY + innerHeight - 14 - totalBlocksHeight;
 
     for (let index = 0; index < visibleItems.length; index += 1) {
       const item = visibleItems[index];
@@ -170,24 +174,15 @@ export default function StackPane({ title, items, emptyLabel }) {
       ctx.fillStyle = 'rgba(244, 240, 232, 0.96)';
       ctx.textBaseline = 'top';
       ctx.textAlign = 'left';
-      ctx.font = '700 12px "IBM Plex Mono", monospace';
-      const slotLabel = isTop ? 'TOP' : `TOP-${item.indexFromTop}`;
-      ctx.fillText(slotLabel, blockX + 14, y + 12);
-
-      ctx.textAlign = 'right';
-      ctx.fillStyle = item.truthy ? 'rgba(83, 209, 166, 0.95)' : 'rgba(255, 123, 114, 0.95)';
-      ctx.fillText(item.truthy ? 'TRUE' : 'FALSE', blockX + blockWidth - 14, y + 12);
-
-      ctx.textAlign = 'left';
       ctx.fillStyle = '#f4f0e8';
       ctx.font = '600 13px "IBM Plex Mono", monospace';
       const hexText = trimText(ctx, item.hex || '(empty)', blockWidth - 28);
-      ctx.fillText(hexText, blockX + 14, y + 32);
+      ctx.fillText(hexText, blockX + 14, y + 14);
 
       ctx.fillStyle = 'rgba(159, 176, 199, 0.95)';
       ctx.font = '500 11px "Space Grotesk", sans-serif';
       const summary = trimText(ctx, summarizeItem(item), blockWidth - 28);
-      ctx.fillText(summary, blockX + 14, y + Math.min(blockHeight - 20, 56));
+      ctx.fillText(summary, blockX + 14, y + Math.min(blockHeight - 22, 38));
 
       y += blockHeight + GAP;
     }

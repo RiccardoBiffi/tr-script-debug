@@ -16,6 +16,7 @@ export default function App() {
   const [playhead, setPlayhead] = useState(0);
   const [sidebarTab, setSidebarTab] = useState('context');
   const [showAltStack, setShowAltStack] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState(PRESETS[0].id);
   const deferredForm = useDeferredValue(form);
   const model = buildModel(deferredForm);
   const frames = model.debug?.snapshots ?? [];
@@ -35,6 +36,7 @@ export default function App() {
   }
 
   function loadPreset(preset) {
+    setSelectedPresetId(preset.id);
     setForm(cloneForm(preset.form));
     setPlayhead(0);
   }
@@ -42,7 +44,6 @@ export default function App() {
   const isRunnable = frames.length > 0 && model.errors.length === 0;
   const statusTone = frame?.success ? 'good' : frame?.error ? 'bad' : 'neutral';
   const finalityTone = frame?.txFinality?.isFinal ? 'good' : 'warn';
-  const currentInstruction = frame?.instructionLabel ?? (frame?.success ? 'Complete' : 'Ready');
   const finalityMessage = frame?.txFinality?.message ?? 'Transaction finality will appear here.';
   const timePreview = model.context
     ? new Date(model.context.chainTime * 1000).toLocaleString()
@@ -68,18 +69,32 @@ export default function App() {
       />
 
       <div className="content-shell">
-        <section className="preset-strip">
-          {PRESETS.map((preset) => (
-            <button key={preset.id} className="preset" onClick={() => loadPreset(preset)} type="button">
-              <span className="preset__name">{preset.name}</span>
-            </button>
-          ))}
-        </section>
-
         <ErrorList errors={model.errors} />
 
         <main className="workspace">
-          <section className="workspace__column">
+          <section className="workspace__column workspace__column--controls">
+            <section className="panel">
+              <PanelHeader eyebrow="Examples" title="Script Examples" />
+              <Field label="Preset" value={selectedPresetId} onChange={() => {}}>
+                <select
+                  className="field__input"
+                  value={selectedPresetId}
+                  onChange={(event) => {
+                    const preset = PRESETS.find(({ id }) => id === event.target.value);
+                    if (preset) {
+                      loadPreset(preset);
+                    }
+                  }}
+                >
+                  {PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </section>
+
             <section className="panel">
               <PanelHeader eyebrow="Witness" title="Witness Stack" />
               <Field
@@ -105,13 +120,6 @@ export default function App() {
             </section>
 
             <section className="panel">
-              <PanelHeader eyebrow="Trace" title="Instruction Trace" />
-              <InstructionLane instructions={model.script.instructions} frame={frame} />
-            </section>
-          </section>
-
-          <section className="workspace__column">
-            <section className="panel">
               <PanelHeader eyebrow="Locking Script" title="Tapscript Assembly" />
               <Field
                 label="Script"
@@ -129,6 +137,13 @@ export default function App() {
             </section>
 
             <section className="panel">
+              <PanelHeader eyebrow="Trace" title="Instruction Trace" />
+              <InstructionLane instructions={model.script.instructions} frame={frame} />
+            </section>
+          </section>
+
+          <section className="workspace__column workspace__column--visualizer">
+            <section className="panel panel--visualizer">
               <PanelHeader
                 eyebrow="Visualizer"
                 title="Stack Visualizer"
@@ -149,7 +164,12 @@ export default function App() {
                 }
               />
               <div className={`stack-layout${showAltStack ? ' stack-layout--expanded' : ''}`}>
-                <StackPane title="Main Stack" items={frame?.stack ?? []} emptyLabel="Main stack is empty." />
+                <StackPane
+                  title="Main Stack"
+                  items={frame?.stack ?? []}
+                  emptyLabel="Main stack is empty."
+                  prominent
+                />
                 {showAltStack ? (
                   <StackPane title="Alt Stack" items={frame?.altStack ?? []} emptyLabel="Alt stack is empty." />
                 ) : null}
@@ -160,7 +180,6 @@ export default function App() {
       </div>
 
       <DebuggerBar
-        currentInstruction={currentInstruction}
         frame={frame}
         finalityMessage={finalityMessage}
         isRunnable={isRunnable}

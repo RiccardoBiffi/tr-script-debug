@@ -1,5 +1,4 @@
 export default function DebuggerBar({
-  currentInstruction,
   frame,
   finalityMessage,
   isRunnable,
@@ -12,16 +11,6 @@ export default function DebuggerBar({
 }) {
   return (
     <section className="debugger-bar">
-      <div className="debugger-bar__status">
-        <div className="debugger-bar__eyebrow">Debugger</div>
-        <div className="debugger-bar__instruction">{currentInstruction}</div>
-        <div
-          className={`debugger-bar__state${frame?.error ? ' debugger-bar__state--error' : frame?.success ? ' debugger-bar__state--success' : ''}`}
-        >
-          {frame?.status ?? 'idle'}
-        </div>
-      </div>
-
       <div className="debugger-bar__message">
         <div className="debugger-bar__note">{frame?.note ?? 'Compile a valid script to start stepping.'}</div>
         <div className="debugger-bar__subnote">{finalityMessage}</div>
