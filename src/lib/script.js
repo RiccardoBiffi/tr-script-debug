@@ -464,23 +464,40 @@ export function normalizeInternalKey(rawKey) {
 }
 
 export function buildTaprootArtifacts(words, internalKey, network) {
-  return buildTaprootArtifactsWithTree(words, internalKey, network, []);
+  return buildTaprootArtifactsWithTree(words, internalKey, network, null);
 }
 
-export function buildTaprootArtifactsWithTree(words, internalKey, network, siblingLeaves = []) {
+function encodeTapleaf(words) {
   const tapleafData = Tap.encodeScript(words);
-  const tapleaf =
-    typeof tapleafData === 'string'
-      ? tapleafData
-      : bytesToHex(tapleafData);
-  const siblingTapleaves = siblingLeaves.map((leafWords) => {
-    const leafData = Tap.encodeScript(leafWords);
-    return typeof leafData === 'string' ? leafData : bytesToHex(leafData);
-  });
-  const tree = [tapleaf, ...siblingTapleaves];
+  return typeof tapleafData === 'string' ? tapleafData : bytesToHex(tapleafData);
+}
+
+function encodeTapTreeNode(node, targetTapleaf) {
+  if (!node) {
+    return targetTapleaf;
+  }
+
+  if (node.type === 'target') {
+    return targetTapleaf;
+  }
+
+  if (node.type === 'leaf') {
+    return encodeTapleaf(node.encodedWords);
+  }
+
+  if (node.type === 'branch') {
+    return node.children.map((child) => encodeTapTreeNode(child, targetTapleaf));
+  }
+
+  throw new Error('Unsupported tap tree node');
+}
+
+export function buildTaprootArtifactsWithTree(words, internalKey, network, treeDefinition = null) {
+  const tapleaf = encodeTapleaf(words);
+  const tree = treeDefinition ? encodeTapTreeNode(treeDefinition, tapleaf) : null;
   const [outputKey, controlBlock] = Tap.getPubKey(
     internalKey,
-    tree.length > 1
+    tree
       ? {
           tree,
           target: tapleaf,

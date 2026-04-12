@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInitialForm } from '../src/data/presets.js';
+import { PRESETS, cloneForm, createInitialForm } from '../src/data/presets.js';
 import { buildModel, parseContext, parseNumberField } from '../src/lib/app-model.js';
 
 function createForm(overrides = {}) {
@@ -64,4 +64,14 @@ test('buildModel supports taproot presets with sibling leaves in the tree', () =
   assert.deepEqual(model.errors, []);
   assert.ok(model.taproot);
   assert.ok(model.taproot.controlBlock.length > 66);
+});
+
+test('buildModel supports nested tap tree layouts with an active tapscript marker', () => {
+  const preset = PRESETS.find(({ id }) => id === 'b-ssl');
+  const model = buildModel(cloneForm(preset.form));
+
+  assert.deepEqual(model.errors, []);
+  assert.ok(model.taproot);
+  assert.ok(model.taproot.controlBlock.length > 130);
+  assert.equal(model.debug.snapshots.at(-1).status, 'success');
 });

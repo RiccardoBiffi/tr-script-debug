@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createInitialForm } from '../src/data/presets.js';
 import {
   buildTaprootArtifacts,
+  buildTaprootArtifactsWithTree,
   bytesToHex,
   castToBool,
   decodeScriptNum,
@@ -82,6 +83,45 @@ test('buildTaprootArtifacts returns usable address and script pubkey data', () =
   assert.match(artifacts.controlBlock, /^[0-9a-f]+$/);
   assert.match(artifacts.address, /^bcrt1p/);
   assert.equal(artifacts.scriptPubKeyWords[0], 'OP_1');
+});
+
+test('buildTaprootArtifactsWithTree supports nested tap tree definitions', () => {
+  const target = parseScript('OP_TRUE');
+  const leafA = parseScript('1 OP_ADD 2 OP_EQUAL');
+  const leafB = parseScript('10 OP_CHECKSEQUENCEVERIFY OP_DROP OP_TRUE');
+  const leafC = parseScript('840000 OP_CHECKLOCKTIMEVERIFY OP_DROP OP_TRUE');
+  const leafD = parseScript('"vault" OP_DROP OP_TRUE');
+  const treeDefinition = {
+    type: 'branch',
+    children: [
+      {
+        type: 'branch',
+        children: [
+          { type: 'target' },
+          { type: 'leaf', encodedWords: leafA.encodedWords },
+        ],
+      },
+      {
+        type: 'branch',
+        children: [
+          { type: 'leaf', encodedWords: leafB.encodedWords },
+          {
+            type: 'branch',
+            children: [
+              { type: 'leaf', encodedWords: leafC.encodedWords },
+              { type: 'leaf', encodedWords: leafD.encodedWords },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const artifacts = buildTaprootArtifactsWithTree(target.encodedWords, INTERNAL_KEY, 'regtest', treeDefinition);
+
+  assert.match(artifacts.controlBlock, /^[0-9a-f]+$/);
+  assert.ok(artifacts.controlBlock.length > 130);
+  assert.match(artifacts.address, /^bcrt1p/);
 });
 
 test('parseLockingScriptInput accepts both assembly and address forms', () => {
